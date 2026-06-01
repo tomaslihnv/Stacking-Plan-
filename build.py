@@ -103,33 +103,24 @@ def read_src(filename):
 
 
 def build():
-    print('Extrayendo datos del Excel...')
-    units  = extract_units()
-    colors = build_colors(units)
-
-    data_json = json.dumps(
-        {'units': units, 'tenant_colors': colors, 'today': TODAY_STR},
-        ensure_ascii=False,
-        separators=(',', ':'),   # compacto para reducir tamaño
-    )
-
     print('Leyendo archivos fuente de src/ ...')
     template = read_src('template.html')
     style    = read_src('style.css')
     script   = read_src('app.js')
 
-    print('Ensamblando stacking_plan.html ...')
+    print('Ensamblando stacking_plan.html (modo upload — sin datos embebidos) ...')
     html = (template
             .replace('{{STYLE}}',  style)
-            .replace('{{DATA}}',   data_json)
             .replace('{{SCRIPT}}', script))
 
     with open(OUT, 'w', encoding='utf-8') as f:
         f.write(html)
 
     size_kb = os.path.getsize(OUT) // 1024
-    print(f'OK stacking_plan.html generado  ({size_kb} KB  |  {len(units)} registros)')
+    print(f'OK stacking_plan.html generado  ({size_kb} KB)')
     print(f'  Abrir: {OUT}')
+    print()
+    print('  Para usar: abre el HTML y arrastra el Excel "Isidora 3000.xlsx" (o cualquier Excel con hoja "Rent Roll")')
 
 
 if __name__ == '__main__':

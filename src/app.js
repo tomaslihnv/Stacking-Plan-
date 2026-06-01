@@ -10,10 +10,10 @@ const TIPO_COLORS = {
 
 
 /* ════════════════════════════════════════════════════════
-   DATA  (inyectada por build.py como RAW)
+   DATA  (se carga dinámicamente desde el Excel subido)
 ════════════════════════════════════════════════════════ */
-const DATA  = RAW.units;
-const TODAY = new Date(RAW.today);
+let DATA  = [];          // se llena en initApp()
+const TODAY = new Date(); // siempre la fecha actual
 
 
 /* ════════════════════════════════════════════════════════
@@ -490,16 +490,7 @@ document.querySelectorAll('.tipo-btn').forEach(btn => {
   });
 });
 
-// Populate tenant dropdown
-(function populateTenantSelect() {
-  const sel = document.getElementById('f-tenant');
-  const tenants = [...new Set(DATA.filter(u => !u.vacante).map(u => u.arrendatario))].sort();
-  tenants.forEach(t => {
-    const opt = document.createElement('option');
-    opt.value = t; opt.textContent = t;
-    sel.appendChild(opt);
-  });
-})();
+// El select de arrendatario se puebla en initApp()
 
 document.getElementById('f-tenant').addEventListener('change', e => {
   state.filterTenant = e.target.value;
@@ -516,12 +507,157 @@ document.getElementById('f-vac').addEventListener('change', e => {
 
 
 /* ════════════════════════════════════════════════════════
+   EXCEL — parseo con SheetJS
+════════════════════════════════════════════════════════ */
+
+/** Convierte fecha Excel (número serial) o string a 'YYYY-MM-DD' */
+function excelToDate(v) {
+  if (v === null || v === undefined || v === '' || v === '-') return '';
+  if (typeof v === 'number') {
+    const d   = new Date(Math.round((v - 25569) * 86400 * 1000));
+    const y   = d.getUTCFullYear();
+    const mon = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(d.getUTCDate()).padStart(2, '0');
+    return `${y}-${mon}-${day}`;
+  }
+  return String(v).trim();
+}
+
+/** Lee la hoja "Rent Roll" del workbook y devuelve array de unidades */
+function parseRentRoll(workbook) {
+  const sheetName = workbook.SheetNames.find(n => n.toLowerCase().trim() === 'rent roll');
+  if (!sheetName) {
+    throw new Error(
+      `No se encontró la hoja "Rent Roll".\nHojas disponibles: ${workbook.SheetNames.join(', ')}`
+    );
+  }
+  const ws   = workbook.Sheets[sheetName];
+  const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: null });
+
+  const units = [];
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i];
+    if (r[0] === null || typeof r[0] !== 'number') continue;
+
+    const toNum = v => (typeof v === 'number' ? v : parseFloat(v) || 0);
+    const arrend = r[1] ? String(r[1]).trim() : '';
+
+    units.push({
+      piso:              Math.round(r[0]),
+      arrendatario:      arrend,
+      sociedad:          r[2]  ? String(r[2]).trim()  : '',
+      tipo:              r[3]  ? String(r[3])          : '',
+      unidad:            r[4]  !== null ? String(r[4]) : '',
+      detalle:           r[5]  ? String(r[5]).trim()   : '',
+      interior_m2:       typeof r[9]  === 'number' ? Math.round(r[9]  * 100) / 100 : null,
+      terraza_m2:        typeof r[10] === 'number' ? Math.round(r[10] * 100) / 100 : null,
+      util_m2:           Math.round(toNum(r[11]) * 100)   / 100,
+      uf_m2:             Math.round(toNum(r[12]) * 10000) / 10000,
+      canon:             Math.round(toNum(r[13]) * 100)   / 100,
+      vencimiento:       excelToDate(r[7]),
+      salida_anticipada: excelToDate(r[6]),
+      vacante:           arrend.toLowerCase() === 'vacante',
+    });
+  }
+  return units;
+}
+
+
+/* ════════════════════════════════════════════════════════
+   UPLOAD — drag & drop / file input
+════════════════════════════════════════════════════════ */
+function setupUpload() {
+  const zone  = document.getElementById('drop-zone');
+  const errEl = document.getElementById('landing-error');
+
+  function handleFile(file) {
+    if (!file) return;
+    if (!file.name.match(/\.xlsx?$/i)) {
+      errEl.textContent = 'Por favor seleccioná un archivo .xlsx o .xls';
+      return;
+    }
+    errEl.textContent = 'Leyendo archivo...';
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const wb    = XLSX.read(e.target.result, { type: 'array' });
+        const units = parseRentRoll(wb);
+        if (!units.length) throw new Error('No se encontraron datos válidos en Rent Roll');
+        initApp(units, file.name.replace(/\.(xlsx?)$/i, ''));
+      } catch (err) {
+        errEl.textContent = 'Error: ' + err.message;
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  document.getElementById('file-input').addEventListener('change',
+    e => handleFile(e.target.files[0]));
+  document.getElementById('file-input-hdr').addEventListener('change',
+    e => handleFile(e.target.files[0]));
+
+  zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('drag-over'); });
+  zone.addEventListener('dragleave', ()  => zone.classList.remove('drag-over'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.classList.remove('drag-over');
+    handleFile(e.dataTransfer.files[0]);
+  });
+
+  // Drop en cualquier parte de la página
+  document.addEventListener('dragover', e => e.preventDefault());
+  document.addEventListener('drop', e => {
+    if (e.target.closest('#drop-zone')) return; // ya manejado arriba
+    e.preventDefault();
+    handleFile(e.dataTransfer.files[0]);
+  });
+}
+
+
+/* ════════════════════════════════════════════════════════
+   INIT APP — se llama tras cargar el Excel
+════════════════════════════════════════════════════════ */
+function initApp(units, fileName) {
+  DATA = units;
+
+  // Header
+  document.getElementById('hdr-title').textContent    = fileName || 'Stacking Plan';
+  document.getElementById('hdr-subtitle').textContent = `${units.length} unidades · Al ` +
+    TODAY.toLocaleDateString('es-CL', { day: '2-digit', month: 'long', year: 'numeric' });
+  document.getElementById('hdr-date').textContent = '';
+
+  // Ocultar landing
+  document.getElementById('landing').classList.add('hidden');
+
+  // Poblar select de arrendatarios
+  const sel     = document.getElementById('f-tenant');
+  sel.innerHTML = '<option value="">Todos</option>';
+  [...new Set(DATA.filter(u => !u.vacante).map(u => u.arrendatario))].sort().forEach(t => {
+    const opt = document.createElement('option');
+    opt.value = t; opt.textContent = t;
+    sel.appendChild(opt);
+  });
+
+  // Reset estado de filtros
+  state.filterTenant = '';
+  state.filterExpiry = '';
+  state.showVacante  = true;
+  state.activeTipos  = new Set(['Oficinas', 'Locales']);
+  document.getElementById('f-tenant').value = '';
+  document.getElementById('f-expiry').value = '';
+  document.getElementById('f-vac').checked  = true;
+  document.querySelectorAll('.tipo-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.tipo === 'Oficinas' || b.dataset.tipo === 'Locales');
+  });
+
+  adjustLayout();
+  renderStacking();
+}
+
+
+/* ════════════════════════════════════════════════════════
    INIT
 ════════════════════════════════════════════════════════ */
-document.getElementById('hdr-date').textContent =
-  'Al ' + TODAY.toLocaleDateString('es-CL', { day: '2-digit', month: 'long', year: 'numeric' });
-
-// Set initial RR sort indicator
 document.querySelector('.rr-table thead th[data-col="piso"]').classList.add('sorted-asc');
 
-renderStacking();
+setupUpload();

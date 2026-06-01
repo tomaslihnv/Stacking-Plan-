@@ -1,8 +1,6 @@
 /* ════════════════════════════════════════════════════════
    CONFIG
 ════════════════════════════════════════════════════════ */
-const TARGET_PX = 900;   // ancho en px del piso más ancho de la torre
-
 const TIPO_COLORS = {
   Oficinas:         '#1976D2',
   Locales:          '#388E3C',
@@ -165,35 +163,22 @@ function updateKPIs(filtered) {
 
 
 
-/* ════════════════════════════════════════════════════════
-   SCALE — px por m²
-════════════════════════════════════════════════════════ */
-function calcScale(byFloor, ofLocFloors) {
-  const towerFloors = ofLocFloors.filter(p => p > 3);
-  const reference   = towerFloors.length ? towerFloors : ofLocFloors;
-  let maxM2 = 0;
-  reference.forEach(piso => {
-    const tot = (byFloor[piso] || []).reduce((s, u) => s + u.util_m2, 0);
-    if (tot > maxM2) maxM2 = tot;
-  });
-  return maxM2 > 0 ? TARGET_PX / maxM2 : 1;
-}
-
 
 /* ════════════════════════════════════════════════════════
    STACKING PLAN — render pisos
 ════════════════════════════════════════════════════════ */
-function renderFloorGroup(container, floors, byFloor, scale) {
+function renderFloorGroup(container, floors, byFloor, highlightedIds) {
   floors.forEach(piso => {
     const units = (byFloor[piso] || []).filter(u => u.tipo === 'Oficinas' || u.tipo === 'Locales');
     if (!units.length) return;
 
-    const row   = el('div', 'floor-row');
-    const label = el('div', 'floor-row__label', floorLabel(piso));
+    const row      = el('div', 'floor-row');
+    const label    = el('div', 'floor-row__label', floorLabel(piso));
     const unitsDiv = el('div', 'floor-row__units');
 
     units.forEach(u => {
-      unitsDiv.appendChild(makeUnitBlock(u, scale));
+      const isHl = highlightedIds.has(`${u.piso}_${u.unidad}`);
+      unitsDiv.appendChild(makeUnitBlock(u, isHl));
     });
 
     row.appendChild(label);
@@ -202,20 +187,22 @@ function renderFloorGroup(container, floors, byFloor, scale) {
   });
 }
 
-function makeUnitBlock(u, scale) {
-  const pxW         = Math.max(u.util_m2 * scale, 44);
-  const statusClass = u.vacante ? 'unit-block--vacante' : 'unit-block--en-renta';
-  const ec          = expiryClass(u);
+function makeUnitBlock(u, highlighted) {
+  const statusClass = highlighted
+    ? (u.vacante ? 'unit-block--vacante' : 'unit-block--en-renta')
+    : 'unit-block--ghost';
+  const ec = highlighted ? expiryClass(u) : '';
 
   const block = el('div', `unit-block ${statusClass}${ec ? ' ' + ec : ''}`);
-  // Solo el ancho va en inline style; los colores vienen del CSS
-  block.style.width    = pxW + 'px';
-  block.style.minWidth = pxW + 'px';
+  // Ancho proporcional al m² dentro del piso (flex-fill); colores vienen del CSS
+  block.style.flexGrow  = u.util_m2;
+  block.style.flexBasis = '0';
+  block.style.minWidth  = '44px';
 
   block.innerHTML =
-    (pxW >= 44 ? `<div class="unit-block__num">${u.unidad}</div>` : '') +
+    `<div class="unit-block__num">${u.unidad}</div>` +
     `<div class="unit-block__tenant">${u.vacante ? 'VACANTE' : u.arrendatario}</div>` +
-    (pxW >= 70  ? `<div class="unit-block__m2">${fmt(u.util_m2, 0)} m²</div>` : '');
+    `<div class="unit-block__m2">${fmt(u.util_m2, 0)} m²</div>`;
 
   block.addEventListener('mouseenter', e => showTooltip(e, u));
   block.addEventListener('mousemove',  moveTooltip);
@@ -223,10 +210,8 @@ function makeUnitBlock(u, scale) {
   return block;
 }
 
-function addSectionLabel(parent, text, scale) {
-  const s = el('div', 'sec-label',
-    text + (scale !== null ? `<span class="sec-scale">escala: 1 px ≈ ${fmt(1 / scale, 2)} m²</span>` : ''));
-  parent.appendChild(s);
+function addSectionLabel(parent, text) {
+  parent.appendChild(el('div', 'sec-label', text));
 }
 
 function addFloorGap(parent, fromFloor, toFloor) {
@@ -245,7 +230,7 @@ function addParkingRow(parent, label, units, style) {
   const lbl  = el('div', 'floor-row__label', floorLabel(label));
   const ud   = el('div', 'floor-row__units');
   const bar  = el('div', `summary-bar ${style}`);
-  bar.style.width = TARGET_PX + 'px';
+  bar.style.flex = '1';
   bar.innerHTML =
     `<span class="summary-bar__count">${occ.length}</span> / ${units.length} ocupados` +
     `&nbsp;<span class="summary-bar__canon">${fmt(canon, 1)} UF/mes</span>` +
@@ -264,32 +249,38 @@ function renderStacking() {
   const filtered = getFilteredData();
   updateKPIs(filtered);
 
-  // Agrupar por piso
-  const byFloor = {};
-  filtered.forEach(u => (byFloor[u.piso] = byFloor[u.piso] || []).push(u));
-
-  const ofLoc   = filtered.filter(u => u.tipo === 'Oficinas' || u.tipo === 'Locales');
-  const estac   = filtered.filter(u => u.tipo === 'Estacionamientos');
-  const bodegas = filtered.filter(u => u.tipo === 'Bodegas');
-
   const building = document.getElementById('building');
   building.innerHTML = '';
 
-  if (!filtered.length) {
-    building.appendChild(el('div', 'no-data', 'Sin datos con los filtros aplicados'));
+  // El edificio SIEMPRE muestra todas las Oficinas + Locales, sin importar el filtro.
+  // Las unidades que no coinciden con el filtro se muestran como "ghost".
+  const allOfLoc = DATA.filter(u => u.tipo === 'Oficinas' || u.tipo === 'Locales');
+
+  if (!allOfLoc.length) {
+    building.appendChild(el('div', 'no-data', 'Sin datos'));
     return;
   }
 
-  // Todos los pisos con Oficinas / Locales, de mayor a menor, sin separación por tipo
-  const ofLocFloors = [...new Set(ofLoc.map(u => u.piso))].sort((a, b) => b - a);
-  const scale       = calcScale(byFloor, ofLocFloors);
-  document.getElementById('hdr-scale').textContent = fmt(1 / scale, 2);
+  // IDs destacadas: solo las que pasan TODOS los filtros activos
+  const highlightedIds = new Set(
+    filtered
+      .filter(u => u.tipo === 'Oficinas' || u.tipo === 'Locales')
+      .map(u => `${u.piso}_${u.unidad}`)
+  );
 
-  renderFloorGroup(building, ofLocFloors, byFloor, scale);
+  const byFloor = {};
+  allOfLoc.forEach(u => (byFloor[u.piso] = byFloor[u.piso] || []).push(u));
+
+  const ofLocFloors = [...new Set(allOfLoc.map(u => u.piso))].sort((a, b) => b - a);
+  renderFloorGroup(building, ofLocFloors, byFloor, highlightedIds);
+
+  // Estacionamientos y Bodegas: controlados por el filtro de tipo (se muestran/ocultan)
+  const estac   = filtered.filter(u => u.tipo === 'Estacionamientos');
+  const bodegas = filtered.filter(u => u.tipo === 'Bodegas');
 
   // ── Estacionamientos ───────────────────────────────
   if (estac.length) {
-    addSectionLabel(building, 'Estacionamientos', null);
+    addSectionLabel(building, 'Estacionamientos');
     [...new Set(estac.map(u => u.piso))].sort((a, b) => b - a).forEach(piso => {
       addParkingRow(building, piso, estac.filter(u => u.piso === piso), 'summary-bar--parking');
     });
@@ -297,7 +288,7 @@ function renderStacking() {
 
   // ── Bodegas ────────────────────────────────────────
   if (bodegas.length) {
-    addSectionLabel(building, 'Bodegas', null);
+    addSectionLabel(building, 'Bodegas');
     [...new Set(bodegas.map(u => u.piso))].sort((a, b) => b - a).forEach(piso => {
       addParkingRow(building, piso, bodegas.filter(u => u.piso === piso), 'summary-bar--bodega');
     });

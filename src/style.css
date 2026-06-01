@@ -361,6 +361,8 @@ select {
   display: flex;
   gap: 3px;
   align-items: stretch;
+  flex: 1;          /* ocupa todo el ancho disponible */
+  min-width: 0;
 }
 
 
@@ -652,4 +654,17 @@ select {
 .unit-block--vacante .unit-block__tenant,
 .unit-block--vacante .unit-block__m2 {
   color: #c0392b;
+}
+
+/* Ghost: unidad fuera del filtro activo — sigue visible para dar contexto al edificio */
+.unit-block--ghost {
+  background: #FFFFFF;
+  border-color: #E4E4E4 !important;
+}
+.unit-block--ghost .unit-block__num {
+  color: #CCCCCC;
+}
+.unit-block--ghost .unit-block__tenant,
+.unit-block--ghost .unit-block__m2 {
+  display: none;   /* ocultamos texto secundario en ghost para no saturar */
 }

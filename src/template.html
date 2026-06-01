@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stacking Plan - Isidora 3000</title>
+  <style>{{STYLE}}</style>
+</head>
+<body>
+
+<!-- ╔══════════════════════════════════════════════╗
+     ║  STICKY TOP — siempre visible al hacer scroll║
+     ╚══════════════════════════════════════════════╝ -->
+<div id="sticky-top">
+
+  <header class="site-header">
+    <div class="header-left">
+      <h1>Isidora 3000 — Stacking Plan</h1>
+      <p class="header-subtitle">Visualización proporcional por m² útil</p>
+    </div>
+    <div class="header-right">
+      <span id="hdr-date"></span><br>
+      <span>Cánones en UF · Escala: 1 px = <span id="hdr-scale">—</span> m²</span>
+    </div>
+  </header>
+
+  <div class="controls-bar">
+    <div class="ctrl-group">
+      <label class="ctrl-label">Tipo</label>
+      <button class="tipo-btn active" data-tipo="Oficinas">Oficinas</button>
+      <button class="tipo-btn active" data-tipo="Locales">Locales</button>
+      <button class="tipo-btn"        data-tipo="Estacionamientos">Estacionamientos</button>
+      <button class="tipo-btn"        data-tipo="Bodegas">Bodegas</button>
+    </div>
+    <div class="ctrl-divider"></div>
+    <div class="ctrl-group">
+      <label class="ctrl-label" for="f-tenant">Arrendatario</label>
+      <select id="f-tenant"><option value="">Todos</option></select>
+    </div>
+    <div class="ctrl-divider"></div>
+    <div class="ctrl-group">
+      <label class="ctrl-label" for="f-expiry">Vence antes de</label>
+      <select id="f-expiry">
+        <option value="">Sin filtro</option>
+        <option value="2026-12-31">Fin 2026</option>
+        <option value="2027-06-30">Jun 2027</option>
+        <option value="2027-12-31">Fin 2027</option>
+        <option value="2028-12-31">Fin 2028</option>
+        <option value="2029-12-31">Fin 2029</option>
+      </select>
+    </div>
+    <div class="ctrl-divider"></div>
+    <label class="ctrl-toggle">
+      <input type="checkbox" id="f-vac" checked> Mostrar Vacantes
+    </label>
+  </div>
+
+  <div class="kpi-bar">
+    <div class="kpi-card">
+      <div class="kpi-label">Ocupación</div>
+      <div class="kpi-value" id="k-occ">—</div>
+      <div class="kpi-sub"   id="k-occ2"></div>
+    </div>
+    <div class="kpi-card kpi-green">
+      <div class="kpi-label">Canon Total</div>
+      <div class="kpi-value" id="k-canon">—</div>
+      <div class="kpi-sub">UF / mes</div>
+    </div>
+    <div class="kpi-card kpi-orange">
+      <div class="kpi-label">Área Arrendada</div>
+      <div class="kpi-value" id="k-area">—</div>
+      <div class="kpi-sub"   id="k-area2"></div>
+    </div>
+    <div class="kpi-card kpi-purple">
+      <div class="kpi-label">Canon Prom.</div>
+      <div class="kpi-value" id="k-uf">—</div>
+      <div class="kpi-sub">UF/m² · mes (arrendado)</div>
+    </div>
+    <div class="kpi-card kpi-red">
+      <div class="kpi-label">Vence &lt;12 meses</div>
+      <div class="kpi-value" id="k-exp">—</div>
+      <div class="kpi-sub"   id="k-exp2"></div>
+    </div>
+  </div>
+
+  <nav class="tab-bar">
+    <button class="tab-btn active" data-tab="stacking">&#127959; Stacking Plan</button>
+    <button class="tab-btn"        data-tab="rentroll">&#128203; Rent Roll</button>
+  </nav>
+
+</div><!-- /sticky-top -->
+
+
+<!-- ╔══════════════════════════════════════════════╗
+     ║  PANE 1 — STACKING PLAN                      ║
+     ╚══════════════════════════════════════════════╝ -->
+<div id="pane-stacking" class="pane">
+
+  <div class="expiry-legend">
+    <span class="expiry-legend__title">Vencimiento:</span>
+    <div class="expiry-item expiry-item--crit">  &lt;6 meses</div>
+    <div class="expiry-item expiry-item--warn">  6–12 m.</div>
+    <div class="expiry-item expiry-item--watch"> 12–24 m.</div>
+    <div class="expiry-item expiry-item--vac">   Vacante</div>
+  </div>
+
+  <div class="stacking-layout">
+
+    <aside class="legend-sidebar">
+      <h3 class="legend-sidebar__title">Arrendatarios</h3>
+      <div id="leg-list"></div>
+    </aside>
+
+    <div class="stacking-scroll" id="stacking-scroll">
+      <div class="building-wrap" id="building"></div>
+    </div>
+
+  </div>
+
+</div><!-- /pane-stacking -->
+
+
+<!-- ╔══════════════════════════════════════════════╗
+     ║  PANE 2 — RENT ROLL                          ║
+     ╚══════════════════════════════════════════════╝ -->
+<div id="pane-rentroll" class="pane pane--hidden">
+
+  <div class="rr-toolbar">
+    <input class="rr-search" id="rr-search"
+           placeholder="&#128269; Buscar arrendatario, unidad, sociedad...">
+    <div class="ctrl-group">
+      <label class="ctrl-label" for="rr-tipo">Tipo</label>
+      <select id="rr-tipo">
+        <option value="">Todos</option>
+        <option>Oficinas</option>
+        <option>Locales</option>
+        <option>Estacionamientos</option>
+        <option>Bodegas</option>
+      </select>
+    </div>
+    <span class="rr-count" id="rr-count"></span>
+  </div>
+
+  <div class="rr-table-wrap">
+    <table class="rr-table" id="rr-table">
+      <thead>
+        <tr>
+          <th data-col="piso">            Piso           <span class="sort-icon"></span></th>
+          <th data-col="tipo">            Tipo           <span class="sort-icon"></span></th>
+          <th data-col="unidad">          Unidad         <span class="sort-icon"></span></th>
+          <th data-col="arrendatario">    Arrendatario   <span class="sort-icon"></span></th>
+          <th data-col="sociedad">        Sociedad       <span class="sort-icon"></span></th>
+          <th data-col="interior_m2" class="th-num"> Interior m² <span class="sort-icon"></span></th>
+          <th data-col="terraza_m2"  class="th-num"> Terraza m²  <span class="sort-icon"></span></th>
+          <th data-col="util_m2"     class="th-num"> Útil m²     <span class="sort-icon"></span></th>
+          <th data-col="uf_m2"       class="th-num"> UF/m²       <span class="sort-icon"></span></th>
+          <th data-col="canon"       class="th-num"> Canon UF/mes<span class="sort-icon"></span></th>
+          <th data-col="vencimiento">     Vencimiento   <span class="sort-icon"></span></th>
+          <th data-col="salida_anticipada">Salida Ant.  <span class="sort-icon"></span></th>
+          <th data-col="_estado">         Estado        <span class="sort-icon"></span></th>
+        </tr>
+      </thead>
+      <tbody id="rr-body"></tbody>
+    </table>
+  </div>
+
+</div><!-- /pane-rentroll -->
+
+
+<!-- Tooltip (posicionado con JS) -->
+<div class="tooltip" id="tooltip"></div>
+
+
+<script>
+/* Datos inyectados por build.py */
+const RAW = {{DATA}};
+
+/* Aplicación */
+{{SCRIPT}}
+</script>
+
+</body>
+</html>

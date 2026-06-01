@@ -5,7 +5,8 @@
       "Bash(python gen_html.py)",
       "Bash(start stacking_plan.html)",
       "Bash(Remove-Item _data.json, gen_html.py -ErrorAction SilentlyContinue)",
-      "Bash(Write-Host \"Cleaned up\")"
+      "Bash(Write-Host \"Cleaned up\")",
+      "Bash(python build.py)"
     ]
   }
 }

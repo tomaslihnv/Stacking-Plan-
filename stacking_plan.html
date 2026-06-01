@@ -307,6 +307,92 @@ select {
 
 
 /* ════════════════════════════════════════════════════════
+   FILTER PANEL — sidebar derecho oscuro
+════════════════════════════════════════════════════════ */
+.filter-panel {
+  width: 200px;
+  min-width: 200px;
+  background: #0F172A;
+  color: #CBD5E1;
+  overflow-y: auto;
+  flex-shrink: 0;
+  border-left: 1px solid #1E293B;
+}
+.fp-header {
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid #1E293B;
+}
+.fp-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: white;
+}
+.fp-section {
+  padding: 12px 14px;
+  border-bottom: 1px solid #1E293B;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.fp-section-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: #475569;
+  margin-bottom: 4px;
+}
+/* Tipo buttons dentro del panel */
+.filter-panel .tipo-btn {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border-radius: 6px;
+  border: 1px solid #334155;
+  background: #1E293B;
+  color: #94A3B8;
+  padding: 5px 10px;
+  font-size: 12px;
+}
+.filter-panel .tipo-btn:hover:not(.active) {
+  border-color: #475569;
+  background: #263447;
+  color: #CBD5E1;
+}
+.filter-panel .tipo-btn.active {
+  border-color: #3B82F6;
+  background: #1D4ED8;
+  color: white;
+}
+/* Selects dentro del panel */
+.fp-select {
+  width: 100%;
+  background: #1E293B;
+  border: 1px solid #334155;
+  color: #CBD5E1;
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  outline: none;
+}
+.fp-select:focus { border-color: #3B82F6; }
+/* Toggle vacante */
+.fp-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 12px;
+  color: #94A3B8;
+}
+.fp-toggle input { accent-color: #3B82F6; cursor: pointer; }
+.fp-toggle:hover { color: #CBD5E1; }
+
+
+/* ════════════════════════════════════════════════════════
    STACKING PLAN — EXPIRY LEGEND STRIP
 ════════════════════════════════════════════════════════ */
 .expiry-legend {
@@ -795,37 +881,6 @@ select {
     </div>
   </header>
 
-  <div class="controls-bar">
-    <div class="ctrl-group">
-      <label class="ctrl-label">Tipo</label>
-      <button class="tipo-btn active" data-tipo="Oficinas">Oficinas</button>
-      <button class="tipo-btn active" data-tipo="Locales">Locales</button>
-      <button class="tipo-btn"        data-tipo="Estacionamientos">Estacionamientos</button>
-      <button class="tipo-btn"        data-tipo="Bodegas">Bodegas</button>
-    </div>
-    <div class="ctrl-divider"></div>
-    <div class="ctrl-group">
-      <label class="ctrl-label" for="f-tenant">Arrendatario</label>
-      <select id="f-tenant"><option value="">Todos</option></select>
-    </div>
-    <div class="ctrl-divider"></div>
-    <div class="ctrl-group">
-      <label class="ctrl-label" for="f-expiry">Vence antes de</label>
-      <select id="f-expiry">
-        <option value="">Sin filtro</option>
-        <option value="2026-12-31">Fin 2026</option>
-        <option value="2027-06-30">Jun 2027</option>
-        <option value="2027-12-31">Fin 2027</option>
-        <option value="2028-12-31">Fin 2028</option>
-        <option value="2029-12-31">Fin 2029</option>
-      </select>
-    </div>
-    <div class="ctrl-divider"></div>
-    <label class="ctrl-toggle">
-      <input type="checkbox" id="f-vac" checked> Mostrar Vacantes
-    </label>
-  </div>
-
   <div class="kpi-bar">
     <div class="kpi-card">
       <div class="kpi-label">Ocupación</div>
@@ -874,9 +929,52 @@ select {
   </div>
 
   <div class="stacking-layout">
+
+    <!-- Edificio (izquierda / centro) -->
     <div class="stacking-scroll" id="stacking-scroll">
       <div class="building-wrap" id="building"></div>
     </div>
+
+    <!-- Panel de filtros (derecha) -->
+    <aside class="filter-panel">
+
+      <div class="fp-header">
+        <span class="fp-title">Filtros</span>
+      </div>
+
+      <div class="fp-section">
+        <div class="fp-section-title">Tipo</div>
+        <button class="tipo-btn active" data-tipo="Oficinas">Oficinas</button>
+        <button class="tipo-btn active" data-tipo="Locales">Locales</button>
+        <button class="tipo-btn"        data-tipo="Estacionamientos">Estacionamientos</button>
+        <button class="tipo-btn"        data-tipo="Bodegas">Bodegas</button>
+      </div>
+
+      <div class="fp-section">
+        <div class="fp-section-title">Arrendatario</div>
+        <select id="f-tenant" class="fp-select"><option value="">Todos</option></select>
+      </div>
+
+      <div class="fp-section">
+        <div class="fp-section-title">Vencimiento</div>
+        <select id="f-expiry" class="fp-select">
+          <option value="">Sin filtro</option>
+          <option value="2026-12-31">Fin 2026</option>
+          <option value="2027-06-30">Jun 2027</option>
+          <option value="2027-12-31">Fin 2027</option>
+          <option value="2028-12-31">Fin 2028</option>
+          <option value="2029-12-31">Fin 2029</option>
+        </select>
+      </div>
+
+      <div class="fp-section">
+        <label class="fp-toggle">
+          <input type="checkbox" id="f-vac" checked> Mostrar Vacantes
+        </label>
+      </div>
+
+    </aside>
+
   </div>
 
 </div><!-- /pane-stacking -->

@@ -50,37 +50,6 @@
     </div>
   </header>
 
-  <div class="controls-bar">
-    <div class="ctrl-group">
-      <label class="ctrl-label">Tipo</label>
-      <button class="tipo-btn active" data-tipo="Oficinas">Oficinas</button>
-      <button class="tipo-btn active" data-tipo="Locales">Locales</button>
-      <button class="tipo-btn"        data-tipo="Estacionamientos">Estacionamientos</button>
-      <button class="tipo-btn"        data-tipo="Bodegas">Bodegas</button>
-    </div>
-    <div class="ctrl-divider"></div>
-    <div class="ctrl-group">
-      <label class="ctrl-label" for="f-tenant">Arrendatario</label>
-      <select id="f-tenant"><option value="">Todos</option></select>
-    </div>
-    <div class="ctrl-divider"></div>
-    <div class="ctrl-group">
-      <label class="ctrl-label" for="f-expiry">Vence antes de</label>
-      <select id="f-expiry">
-        <option value="">Sin filtro</option>
-        <option value="2026-12-31">Fin 2026</option>
-        <option value="2027-06-30">Jun 2027</option>
-        <option value="2027-12-31">Fin 2027</option>
-        <option value="2028-12-31">Fin 2028</option>
-        <option value="2029-12-31">Fin 2029</option>
-      </select>
-    </div>
-    <div class="ctrl-divider"></div>
-    <label class="ctrl-toggle">
-      <input type="checkbox" id="f-vac" checked> Mostrar Vacantes
-    </label>
-  </div>
-
   <div class="kpi-bar">
     <div class="kpi-card">
       <div class="kpi-label">Ocupación</div>
@@ -129,9 +98,52 @@
   </div>
 
   <div class="stacking-layout">
+
+    <!-- Edificio (izquierda / centro) -->
     <div class="stacking-scroll" id="stacking-scroll">
       <div class="building-wrap" id="building"></div>
     </div>
+
+    <!-- Panel de filtros (derecha) -->
+    <aside class="filter-panel">
+
+      <div class="fp-header">
+        <span class="fp-title">Filtros</span>
+      </div>
+
+      <div class="fp-section">
+        <div class="fp-section-title">Tipo</div>
+        <button class="tipo-btn active" data-tipo="Oficinas">Oficinas</button>
+        <button class="tipo-btn active" data-tipo="Locales">Locales</button>
+        <button class="tipo-btn"        data-tipo="Estacionamientos">Estacionamientos</button>
+        <button class="tipo-btn"        data-tipo="Bodegas">Bodegas</button>
+      </div>
+
+      <div class="fp-section">
+        <div class="fp-section-title">Arrendatario</div>
+        <select id="f-tenant" class="fp-select"><option value="">Todos</option></select>
+      </div>
+
+      <div class="fp-section">
+        <div class="fp-section-title">Vencimiento</div>
+        <select id="f-expiry" class="fp-select">
+          <option value="">Sin filtro</option>
+          <option value="2026-12-31">Fin 2026</option>
+          <option value="2027-06-30">Jun 2027</option>
+          <option value="2027-12-31">Fin 2027</option>
+          <option value="2028-12-31">Fin 2028</option>
+          <option value="2029-12-31">Fin 2029</option>
+        </select>
+      </div>
+
+      <div class="fp-section">
+        <label class="fp-toggle">
+          <input type="checkbox" id="f-vac" checked> Mostrar Vacantes
+        </label>
+      </div>
+
+    </aside>
+
   </div>
 
 </div><!-- /pane-stacking -->

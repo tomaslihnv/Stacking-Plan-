@@ -299,6 +299,92 @@ select {
 
 
 /* ════════════════════════════════════════════════════════
+   FILTER PANEL — sidebar derecho oscuro
+════════════════════════════════════════════════════════ */
+.filter-panel {
+  width: 200px;
+  min-width: 200px;
+  background: #0F172A;
+  color: #CBD5E1;
+  overflow-y: auto;
+  flex-shrink: 0;
+  border-left: 1px solid #1E293B;
+}
+.fp-header {
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid #1E293B;
+}
+.fp-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: white;
+}
+.fp-section {
+  padding: 12px 14px;
+  border-bottom: 1px solid #1E293B;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.fp-section-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: #475569;
+  margin-bottom: 4px;
+}
+/* Tipo buttons dentro del panel */
+.filter-panel .tipo-btn {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border-radius: 6px;
+  border: 1px solid #334155;
+  background: #1E293B;
+  color: #94A3B8;
+  padding: 5px 10px;
+  font-size: 12px;
+}
+.filter-panel .tipo-btn:hover:not(.active) {
+  border-color: #475569;
+  background: #263447;
+  color: #CBD5E1;
+}
+.filter-panel .tipo-btn.active {
+  border-color: #3B82F6;
+  background: #1D4ED8;
+  color: white;
+}
+/* Selects dentro del panel */
+.fp-select {
+  width: 100%;
+  background: #1E293B;
+  border: 1px solid #334155;
+  color: #CBD5E1;
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  outline: none;
+}
+.fp-select:focus { border-color: #3B82F6; }
+/* Toggle vacante */
+.fp-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 12px;
+  color: #94A3B8;
+}
+.fp-toggle input { accent-color: #3B82F6; cursor: pointer; }
+.fp-toggle:hover { color: #CBD5E1; }
+
+
+/* ════════════════════════════════════════════════════════
    STACKING PLAN — EXPIRY LEGEND STRIP
 ════════════════════════════════════════════════════════ */
 .expiry-legend {

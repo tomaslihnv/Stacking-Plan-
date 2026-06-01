@@ -264,7 +264,7 @@ select {
 
 
 /* ════════════════════════════════════════════════════════
-   STACKING PLAN — LAYOUT  (sidebar + scroll area)
+   STACKING PLAN — LAYOUT
 ════════════════════════════════════════════════════════ */
 .stacking-layout {
   display: flex;
@@ -281,60 +281,6 @@ select {
   min-width: 100%;
 }
 
-
-/* ════════════════════════════════════════════════════════
-   STACKING PLAN — LEGEND SIDEBAR
-════════════════════════════════════════════════════════ */
-.legend-sidebar {
-  width: 200px;
-  min-width: 200px;
-  background: white;
-  border-right: 1px solid #E0E0E0;
-  padding: 12px 10px;
-  overflow-y: auto;
-  flex-shrink: 0;
-}
-.legend-sidebar__title {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-  color: #90A4AE;
-  font-weight: 700;
-  margin-bottom: 8px;
-  padding: 0 4px;
-}
-.leg-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 3px 4px;
-  border-radius: 4px;
-  cursor: pointer;
-  margin-bottom: 1px;
-  transition: background 0.1s;
-}
-.leg-item:hover { background: #F5F5F5; }
-.leg-item.dimmed { opacity: 0.28; }
-.leg-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 2px;
-  flex-shrink: 0;
-}
-.leg-name {
-  font-size: 11px;
-  font-weight: 500;
-  color: #37474F;
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.leg-m2 {
-  font-size: 10px;
-  color: #B0BEC5;
-  flex-shrink: 0;
-}
 
 
 /* ════════════════════════════════════════════════════════
@@ -438,12 +384,8 @@ select {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
   z-index: 20;
 }
-.unit-block.dimmed { opacity: 0.14; }
-
-/* Expiry borders */
-.unit-block.exp-crit  { border-color: #D32F2F !important; }
-.unit-block.exp-warn  { border-color: #F57C00 !important; }
-.unit-block.exp-watch { border-color: #FBC02D !important; }
+/* Expiry borders — solo vencidos */
+.unit-block.exp-crit { border-color: #D32F2F !important; }
 
 /* Text inside blocks */
 .unit-block__num {
@@ -682,4 +624,32 @@ select {
   padding: 60px;
   color: #B0BEC5;
   font-size: 15px;
+}
+
+
+/* ════════════════════════════════════════════════════════
+   UNIT BLOCK — ESTADO (En Renta / Vacante)
+   Estas clases se aplican desde JS según u.vacante
+════════════════════════════════════════════════════════ */
+
+/* En Renta: menta pastel, borde verde, texto verde oscuro */
+.unit-block--en-renta {
+  background: #d6f5e8;
+  border-color: #7ecba1 !important;
+}
+.unit-block--en-renta .unit-block__num,
+.unit-block--en-renta .unit-block__tenant,
+.unit-block--en-renta .unit-block__m2 {
+  color: #1e6b42;
+}
+
+/* Vacante: rosa pastel, borde rojo suave, texto rojo oscuro */
+.unit-block--vacante {
+  background: #ffd9d9;
+  border-color: #f0a0a0 !important;
+}
+.unit-block--vacante .unit-block__num,
+.unit-block--vacante .unit-block__tenant,
+.unit-block--vacante .unit-block__m2 {
+  color: #c0392b;
 }

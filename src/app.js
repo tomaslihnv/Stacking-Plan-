@@ -14,9 +14,8 @@ const TIPO_COLORS = {
 /* ════════════════════════════════════════════════════════
    DATA  (inyectada por build.py como RAW)
 ════════════════════════════════════════════════════════ */
-const DATA   = RAW.units;
-const COLORS = RAW.tenant_colors;   // { arrendatario: '#hexcolor' }
-const TODAY  = new Date(RAW.today);
+const DATA  = RAW.units;
+const TODAY = new Date(RAW.today);
 
 
 /* ════════════════════════════════════════════════════════
@@ -28,7 +27,6 @@ const state = {
   filterTenant:  '',
   filterExpiry:  '',
   showVacante:   true,
-  hlTenant:      null,   // highlighted tenant in legend
 
   // Rent Roll
   rrSearch:   '',
@@ -57,23 +55,13 @@ function daysUntil(dateStr) {
   return isNaN(d) ? null : Math.round((d - TODAY) / 86_400_000);
 }
 
-/** Clase CSS de expiración para un unit */
+/** Clase CSS de expiración para un unit — solo marca los ya vencidos */
 function expiryClass(unit) {
   if (unit.vacante) return '';
   const d = daysUntil(unit.vencimiento);
-  if (d === null)  return '';
-  if (d < 180)     return 'exp-crit';
-  if (d < 365)     return 'exp-warn';
-  if (d < 730)     return 'exp-watch';
+  if (d === null) return '';
+  if (d < 0)      return 'exp-crit';   // contrato ya vencido
   return '';
-}
-
-/** Color de texto (blanco/negro) sobre un fondo hex */
-function contrastText(hex) {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.52 ? '#212121' : '#FFFFFF';
 }
 
 /** Formatea número con separador de miles (es-CL) */
@@ -176,41 +164,6 @@ function updateKPIs(filtered) {
 }
 
 
-/* ════════════════════════════════════════════════════════
-   LEGEND SIDEBAR
-════════════════════════════════════════════════════════ */
-function updateLegend(filtered) {
-  const m2ByTenant = {};
-  filtered.forEach(u => {
-    if (!u.vacante) m2ByTenant[u.arrendatario] = (m2ByTenant[u.arrendatario] || 0) + u.util_m2;
-  });
-  const sorted   = Object.entries(m2ByTenant).sort((a, b) => b[1] - a[1]);
-  const vacM2    = filtered.filter(u => u.vacante).reduce((s, u) => s + u.util_m2, 0);
-  const list     = document.getElementById('leg-list');
-  list.innerHTML = '';
-
-  if (vacM2 > 0 && state.showVacante) {
-    list.appendChild(makeLegendItem('Vacante', '#CFD8DC', true, vacM2));
-  }
-  sorted.forEach(([tenant, m2]) => {
-    list.appendChild(makeLegendItem(tenant, COLORS[tenant] || '#9E9E9E', false, m2));
-  });
-}
-
-function makeLegendItem(tenant, color, isVacante, m2) {
-  const dimmed = state.hlTenant && state.hlTenant !== tenant;
-  const item   = el('div', 'leg-item' + (dimmed ? ' dimmed' : ''));
-  item.innerHTML =
-    `<div class="leg-dot" style="background:${color};${isVacante ? 'border:1px solid #90A4AE' : ''}"></div>` +
-    `<span class="leg-name" title="${tenant}">${tenant}</span>` +
-    `<span class="leg-m2">${fmt(m2, 0)}</span>`;
-  item.addEventListener('click', () => {
-    state.hlTenant = state.hlTenant === tenant ? null : tenant;
-    renderStacking();
-  });
-  return item;
-}
-
 
 /* ════════════════════════════════════════════════════════
    SCALE — px por m²
@@ -250,16 +203,14 @@ function renderFloorGroup(container, floors, byFloor, scale) {
 }
 
 function makeUnitBlock(u, scale) {
-  const pxW    = Math.max(u.util_m2 * scale, 44);
-  const color  = u.vacante ? '#CFD8DC' : (COLORS[u.arrendatario] || '#9E9E9E');
-  const tColor = u.vacante ? '#546E7A' : contrastText(color);
-  const ec     = expiryClass(u);
-  const dimmed = state.hlTenant && u.arrendatario !== state.hlTenant;
+  const pxW         = Math.max(u.util_m2 * scale, 44);
+  const statusClass = u.vacante ? 'unit-block--vacante' : 'unit-block--en-renta';
+  const ec          = expiryClass(u);
 
-  const block = el('div',
-    'unit-block' + (ec ? ' ' + ec : '') + (dimmed ? ' dimmed' : ''));
-  block.style.cssText = `width:${pxW}px;min-width:${pxW}px;background:${color};color:${tColor};`;
-  if (u.vacante) block.style.borderColor = '#90A4AE';
+  const block = el('div', `unit-block ${statusClass}${ec ? ' ' + ec : ''}`);
+  // Solo el ancho va en inline style; los colores vienen del CSS
+  block.style.width    = pxW + 'px';
+  block.style.minWidth = pxW + 'px';
 
   block.innerHTML =
     (pxW >= 44 ? `<div class="unit-block__num">${u.unidad}</div>` : '') +
@@ -326,7 +277,6 @@ function renderStacking() {
 
   if (!filtered.length) {
     building.appendChild(el('div', 'no-data', 'Sin datos con los filtros aplicados'));
-    updateLegend([]);
     return;
   }
 
@@ -382,7 +332,6 @@ function renderStacking() {
     });
   }
 
-  updateLegend(filtered);
 }
 
 

@@ -270,7 +270,7 @@ select {
 
 
 /* ════════════════════════════════════════════════════════
-   STACKING PLAN — LAYOUT  (sidebar + scroll area)
+   STACKING PLAN — LAYOUT
 ════════════════════════════════════════════════════════ */
 .stacking-layout {
   display: flex;
@@ -287,60 +287,6 @@ select {
   min-width: 100%;
 }
 
-
-/* ════════════════════════════════════════════════════════
-   STACKING PLAN — LEGEND SIDEBAR
-════════════════════════════════════════════════════════ */
-.legend-sidebar {
-  width: 200px;
-  min-width: 200px;
-  background: white;
-  border-right: 1px solid #E0E0E0;
-  padding: 12px 10px;
-  overflow-y: auto;
-  flex-shrink: 0;
-}
-.legend-sidebar__title {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-  color: #90A4AE;
-  font-weight: 700;
-  margin-bottom: 8px;
-  padding: 0 4px;
-}
-.leg-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 3px 4px;
-  border-radius: 4px;
-  cursor: pointer;
-  margin-bottom: 1px;
-  transition: background 0.1s;
-}
-.leg-item:hover { background: #F5F5F5; }
-.leg-item.dimmed { opacity: 0.28; }
-.leg-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 2px;
-  flex-shrink: 0;
-}
-.leg-name {
-  font-size: 11px;
-  font-weight: 500;
-  color: #37474F;
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.leg-m2 {
-  font-size: 10px;
-  color: #B0BEC5;
-  flex-shrink: 0;
-}
 
 
 /* ════════════════════════════════════════════════════════
@@ -444,12 +390,8 @@ select {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
   z-index: 20;
 }
-.unit-block.dimmed { opacity: 0.14; }
-
-/* Expiry borders */
-.unit-block.exp-crit  { border-color: #D32F2F !important; }
-.unit-block.exp-warn  { border-color: #F57C00 !important; }
-.unit-block.exp-watch { border-color: #FBC02D !important; }
+/* Expiry borders — solo vencidos */
+.unit-block.exp-crit { border-color: #D32F2F !important; }
 
 /* Text inside blocks */
 .unit-block__num {
@@ -689,6 +631,34 @@ select {
   color: #B0BEC5;
   font-size: 15px;
 }
+
+
+/* ════════════════════════════════════════════════════════
+   UNIT BLOCK — ESTADO (En Renta / Vacante)
+   Estas clases se aplican desde JS según u.vacante
+════════════════════════════════════════════════════════ */
+
+/* En Renta: menta pastel, borde verde, texto verde oscuro */
+.unit-block--en-renta {
+  background: #d6f5e8;
+  border-color: #7ecba1 !important;
+}
+.unit-block--en-renta .unit-block__num,
+.unit-block--en-renta .unit-block__tenant,
+.unit-block--en-renta .unit-block__m2 {
+  color: #1e6b42;
+}
+
+/* Vacante: rosa pastel, borde rojo suave, texto rojo oscuro */
+.unit-block--vacante {
+  background: #ffd9d9;
+  border-color: #f0a0a0 !important;
+}
+.unit-block--vacante .unit-block__num,
+.unit-block--vacante .unit-block__tenant,
+.unit-block--vacante .unit-block__m2 {
+  color: #c0392b;
+}
 </style>
 </head>
 <body>
@@ -791,11 +761,6 @@ select {
 
   <div class="stacking-layout">
 
-    <aside class="legend-sidebar">
-      <h3 class="legend-sidebar__title">Arrendatarios</h3>
-      <div id="leg-list"></div>
-    </aside>
-
     <div class="stacking-scroll" id="stacking-scroll">
       <div class="building-wrap" id="building"></div>
     </div>
@@ -877,9 +842,8 @@ const TIPO_COLORS = {
 /* ════════════════════════════════════════════════════════
    DATA  (inyectada por build.py como RAW)
 ════════════════════════════════════════════════════════ */
-const DATA   = RAW.units;
-const COLORS = RAW.tenant_colors;   // { arrendatario: '#hexcolor' }
-const TODAY  = new Date(RAW.today);
+const DATA  = RAW.units;
+const TODAY = new Date(RAW.today);
 
 
 /* ════════════════════════════════════════════════════════
@@ -891,7 +855,6 @@ const state = {
   filterTenant:  '',
   filterExpiry:  '',
   showVacante:   true,
-  hlTenant:      null,   // highlighted tenant in legend
 
   // Rent Roll
   rrSearch:   '',
@@ -920,23 +883,13 @@ function daysUntil(dateStr) {
   return isNaN(d) ? null : Math.round((d - TODAY) / 86_400_000);
 }
 
-/** Clase CSS de expiración para un unit */
+/** Clase CSS de expiración para un unit — solo marca los ya vencidos */
 function expiryClass(unit) {
   if (unit.vacante) return '';
   const d = daysUntil(unit.vencimiento);
-  if (d === null)  return '';
-  if (d < 180)     return 'exp-crit';
-  if (d < 365)     return 'exp-warn';
-  if (d < 730)     return 'exp-watch';
+  if (d === null) return '';
+  if (d < 0)      return 'exp-crit';   // contrato ya vencido
   return '';
-}
-
-/** Color de texto (blanco/negro) sobre un fondo hex */
-function contrastText(hex) {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.52 ? '#212121' : '#FFFFFF';
 }
 
 /** Formatea número con separador de miles (es-CL) */
@@ -1039,41 +992,6 @@ function updateKPIs(filtered) {
 }
 
 
-/* ════════════════════════════════════════════════════════
-   LEGEND SIDEBAR
-════════════════════════════════════════════════════════ */
-function updateLegend(filtered) {
-  const m2ByTenant = {};
-  filtered.forEach(u => {
-    if (!u.vacante) m2ByTenant[u.arrendatario] = (m2ByTenant[u.arrendatario] || 0) + u.util_m2;
-  });
-  const sorted   = Object.entries(m2ByTenant).sort((a, b) => b[1] - a[1]);
-  const vacM2    = filtered.filter(u => u.vacante).reduce((s, u) => s + u.util_m2, 0);
-  const list     = document.getElementById('leg-list');
-  list.innerHTML = '';
-
-  if (vacM2 > 0 && state.showVacante) {
-    list.appendChild(makeLegendItem('Vacante', '#CFD8DC', true, vacM2));
-  }
-  sorted.forEach(([tenant, m2]) => {
-    list.appendChild(makeLegendItem(tenant, COLORS[tenant] || '#9E9E9E', false, m2));
-  });
-}
-
-function makeLegendItem(tenant, color, isVacante, m2) {
-  const dimmed = state.hlTenant && state.hlTenant !== tenant;
-  const item   = el('div', 'leg-item' + (dimmed ? ' dimmed' : ''));
-  item.innerHTML =
-    `<div class="leg-dot" style="background:${color};${isVacante ? 'border:1px solid #90A4AE' : ''}"></div>` +
-    `<span class="leg-name" title="${tenant}">${tenant}</span>` +
-    `<span class="leg-m2">${fmt(m2, 0)}</span>`;
-  item.addEventListener('click', () => {
-    state.hlTenant = state.hlTenant === tenant ? null : tenant;
-    renderStacking();
-  });
-  return item;
-}
-
 
 /* ════════════════════════════════════════════════════════
    SCALE — px por m²
@@ -1113,16 +1031,14 @@ function renderFloorGroup(container, floors, byFloor, scale) {
 }
 
 function makeUnitBlock(u, scale) {
-  const pxW    = Math.max(u.util_m2 * scale, 44);
-  const color  = u.vacante ? '#CFD8DC' : (COLORS[u.arrendatario] || '#9E9E9E');
-  const tColor = u.vacante ? '#546E7A' : contrastText(color);
-  const ec     = expiryClass(u);
-  const dimmed = state.hlTenant && u.arrendatario !== state.hlTenant;
+  const pxW         = Math.max(u.util_m2 * scale, 44);
+  const statusClass = u.vacante ? 'unit-block--vacante' : 'unit-block--en-renta';
+  const ec          = expiryClass(u);
 
-  const block = el('div',
-    'unit-block' + (ec ? ' ' + ec : '') + (dimmed ? ' dimmed' : ''));
-  block.style.cssText = `width:${pxW}px;min-width:${pxW}px;background:${color};color:${tColor};`;
-  if (u.vacante) block.style.borderColor = '#90A4AE';
+  const block = el('div', `unit-block ${statusClass}${ec ? ' ' + ec : ''}`);
+  // Solo el ancho va en inline style; los colores vienen del CSS
+  block.style.width    = pxW + 'px';
+  block.style.minWidth = pxW + 'px';
 
   block.innerHTML =
     (pxW >= 44 ? `<div class="unit-block__num">${u.unidad}</div>` : '') +
@@ -1189,7 +1105,6 @@ function renderStacking() {
 
   if (!filtered.length) {
     building.appendChild(el('div', 'no-data', 'Sin datos con los filtros aplicados'));
-    updateLegend([]);
     return;
   }
 
@@ -1245,7 +1160,6 @@ function renderStacking() {
     });
   }
 
-  updateLegend(filtered);
 }
 
 

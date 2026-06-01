@@ -280,41 +280,12 @@ function renderStacking() {
     return;
   }
 
-  // Pisos con Oficinas / Locales, de mayor a menor (arriba → abajo en pantalla)
-  const ofLocFloors  = [...new Set(ofLoc.map(u => u.piso))].sort((a, b) => b - a);
-  const scale        = calcScale(byFloor, ofLocFloors);
+  // Todos los pisos con Oficinas / Locales, de mayor a menor, sin separación por tipo
+  const ofLocFloors = [...new Set(ofLoc.map(u => u.piso))].sort((a, b) => b - a);
+  const scale       = calcScale(byFloor, ofLocFloors);
   document.getElementById('hdr-scale').textContent = fmt(1 / scale, 2);
 
-  const towerFloors = ofLocFloors.filter(p => p > 3);
-  const commFloors  = ofLocFloors.filter(p => p >= 1 && p <= 3);
-  const subFloors   = ofLocFloors.filter(p => p < 0);
-
-  // ── Torre ──────────────────────────────────────────
-  if (towerFloors.length) {
-    addSectionLabel(building, 'Torre Oficinas', scale);
-    renderFloorGroup(building, towerFloors, byFloor, scale);
-  }
-
-  // Gap entre torre y locales
-  if (towerFloors.length && commFloors.length) {
-    const minTower = towerFloors[towerFloors.length - 1];
-    const maxComm  = commFloors[0];
-    if (minTower - maxComm > 1) {
-      addFloorGap(building, maxComm + 1, minTower - 1);
-    }
-  }
-
-  // ── Locales comerciales ────────────────────────────
-  if (commFloors.length) {
-    addSectionLabel(building, 'Locales Comerciales', scale);
-    renderFloorGroup(building, commFloors, byFloor, scale);
-  }
-
-  // ── Subterráneo (oficinas / locales) ───────────────
-  if (subFloors.length) {
-    addSectionLabel(building, 'Subterráneo — Oficinas / Locales', scale);
-    renderFloorGroup(building, subFloors, byFloor, scale);
-  }
+  renderFloorGroup(building, ofLocFloors, byFloor, scale);
 
   // ── Estacionamientos ───────────────────────────────
   if (estac.length) {
